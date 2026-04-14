@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>GenMeta</title>
+<style>
+/* ── Theme tokens ── */
+[data-theme="dark"] {
+  --bg:       #080c12;
+  --bg2:      #050810;
+  --card:     #0f1520;
+  --card2:    #0c1119;
+  --border:   #1a2535;
+  --border2:  #243248;
+  --accent:   #3b82f6;
+  --accent2:  #2563eb;
+  --green:    #10b981;
+  --orange:   #f59e0b;
+  --red:      #ef4444;
+  --yellow:   #eab308;
+  --text:     #e2e8f0;
+  --text2:    #cbd5e1;
+  --muted:    #64748b;
+  --muted2:   #1e2d42;
+  --shadow:   rgba(0,0,0,.5);
+  --panel-bg: #0d1421;
+}
+[data-theme="light"] {
+  --bg:       #f1f5f9;
+  --bg2:      #e2e8f4;
+  --card:     #ffffff;
+  --card2:    #f4f7fc;
+  --border:   #c8d4e4;
+  --border2:  #a8b8cc;
+  --accent:   #2563eb;
+  --accent2:  #1d4ed8;
+  --green:    #059669;
+  --orange:   #d97706;
+  --red:      #dc2626;
+  --yellow:   #b45309;
+  --text:     #0f172a;
+  --text2:    #1e293b;
+  --muted:    #475569;
+  --muted2:   #dde4ed;
+  --shadow:   rgba(0,0,0,.15);
+  --panel-bg: #ffffff;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:13px; line-height:1.5; overflow-x:hidden;
+  transition:background .25s, color .25s;
+}
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-thumb { background:var(--muted2); border-radius:4px; }
+
+.page { max-width:920px; margin:0 auto; padding:28px 22px 48px; }
+
+/* ── Header ── */
+.header {
+  display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:26px;
+}
+.logo { display:flex; align-items:center; gap:12px; }
+.logo-icon { font-size:28px; line-height:1; }
+.logo h1 {
+  font-size:21px; font-weight:700; letter-spacing:-.4px;
+  background:linear-gradient(135deg,var(--text),#93c5fd);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.logo p { font-size:11px; color:var(--muted); margin-top:1px; }
+.header-actions { display:flex; gap:7px; align-items:center; }
+.hbtn {
+  display:flex; align-items:center; gap:5px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; color:var(--muted); padding:7px 13px;
+  cursor:pointer; font-size:12px; transition:all .15s;
+}
+.hbtn:hover { border-color:var(--accent); color:var(--text); }
+
+/* Theme toggle */
+.theme-toggle {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:7px 10px; cursor:pointer;
+  font-size:14px; transition:all .15s; line-height:1;
+}
+.theme-toggle:hover { border-color:var(--accent); }
+
+/* ── Divider ── */
+.divider {
+  height:1px; background:var(--border);
+  margin:20px 0; opacity:.6;
+}
+
+/* ── Folder input ── */
+.folder-wrap {
+  display:flex; align-items:center;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:10px; padding:4px 6px 4px 14px;
+  margin-bottom:14px; transition:border-color .2s, box-shadow .2s;
+}
+.folder-wrap:hover { border-color:var(--accent); }
+.folder-wrap:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+.folder-wrap.drag-over {
+  border-color:var(--green); background:rgba(16,185,129,.05);
+  box-shadow:0 0 0 3px rgba(16,185,129,.12);
+}
+.fi-icon { font-size:17px; opacity:.5; margin-right:9px; flex-shrink:0; }
+.fi-input {
+  flex:1; background:transparent; border:none;
+  color:var(--text); font-size:13px; outline:none;
+  padding:10px 0; cursor:default;
+}
+.fi-input::placeholder { color:var(--muted); }
+.fi-input.editable { cursor:text; }
+.fi-hint { font-size:11px; color:var(--muted); margin-right:10px; flex-shrink:0; }
+.fi-btn {
+  background:var(--muted2); border:none; border-radius:7px;
+  color:var(--text); padding:7px 14px; font-size:12px;
+  cursor:pointer; transition:all .15s; flex-shrink:0;
+}
+.fi-btn:hover { background:var(--accent); color:white; }
+
+/* Drop overlay */
+#drop-hint {
+  display:none; position:fixed; inset:0; z-index:100;
+  background:rgba(16,185,129,.1);
+  border:2px dashed var(--green);
+  border-radius:14px; margin:12px;
+  align-items:center; justify-content:center;
+  flex-direction:column; gap:10px;
+  font-size:18px; color:var(--green); pointer-events:none;
+}
+#drop-hint.visible { display:flex; }
+
+/* ── Locked warning ── */
+#locked-banner {
+  display:none; background:rgba(180,83,9,.1);
+  border:1px solid rgba(251,146,60,.22);
+  border-radius:8px; padding:10px 14px;
+  font-size:12px; color:#fb923c; margin-bottom:14px;
+}
+
+/* ── Action bar ── */
+.action-bar { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+.btn {
+  display:flex; align-items:center; gap:6px;
+  padding:9px 18px; border:none; border-radius:8px;
+  font-size:13px; font-weight:500; cursor:pointer;
+  transition:all .15s;
+}
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.btn-primary { background:var(--accent); color:white; box-shadow:0 1px 3px rgba(37,99,235,.25); }
+.btn-primary:hover:not(:disabled) { background:var(--accent2); transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,.35); }
+.btn-stop    { background:#7f1d1d; color:#fca5a5; }
+[data-theme="light"] .btn-stop { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+.btn-secondary { background:var(--card); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--accent); background:rgba(37,99,235,.04); }
+.btn-undo  { background:var(--card); color:#c4b5fd; border:1px solid #4c1d95; }
+[data-theme="light"] .btn-undo { color:#7c3aed; border-color:#7c3aed; }
+.btn-undo.confirm { background:#7f1d1d; color:#fca5a5; border-color:#7f1d1d; }
+
+/* ── Filter pills ── */
+.pills-label { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
+.pills { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px; }
+.pill {
+  display:flex; align-items:center; gap:5px;
+  padding:6px 13px; border-radius:20px; font-size:12px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; transition:all .15s;
+  user-select:none;
+}
+.pill:hover { border-color:var(--border2); color:var(--text2); }
+.pill.active { background:rgba(59,130,246,.1); border-color:var(--accent); color:var(--text); }
+.pill.active .pdot { background:var(--accent); }
+.pdot { width:7px; height:7px; border-radius:50%; background:var(--muted2); transition:background .15s; }
+
+/* ── Mode badge ── */
+.mode-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:20px; font-size:11px;
+  background:rgba(59,130,246,.07); border:1px solid rgba(59,130,246,.15);
+  color:#93c5fd; margin-bottom:18px; cursor:default;
+}
+[data-theme="light"] .mode-badge { color:var(--accent2); }
+.mbdot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+/* ── Progress ── */
+.prog-section { margin-bottom:20px; }
+.prog-top { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px; }
+.prog-bg { height:5px; background:var(--card2); border-radius:3px; overflow:hidden; }
+#prog-bar {
+  height:100%; width:0%; background:var(--accent);
+  border-radius:3px; transition:width .35s ease;
+}
+#prog-bar.pulse {
+  width:100%;
+  background:linear-gradient(90deg,var(--card2) 0%,var(--accent) 50%,var(--card2) 100%);
+  background-size:200% 100%; animation:pulse 1.5s infinite ease-in-out;
+}
+@keyframes pulse { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+.prog-bot { display:flex; justify-content:space-between; font-size:11px; margin-top:6px; }
+#status-label { color:var(--muted); }
+#prog-fraction { color:var(--text); font-weight:500; }
+
+/* ── Stats grid ── */
+.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+@media(max-width:620px) { .stats { grid-template-columns:repeat(2,1fr); } }
+.stat {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:10px; padding:14px 15px;
+  transition:border-color .2s, transform .15s;
+  cursor:default;
+}
+.stat:hover { border-color:var(--border2); transform:translateY(-1px); }
+.stat .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:6px; }
+.stat .val { font-size:26px; font-weight:700; line-height:1.1; }
+.green  .val { color:var(--green); }
+.orange .val { color:var(--orange); }
+.red    .val { color:var(--red); }
+.blue   .val { color:var(--accent); }
+.yellow .val { color:var(--yellow); }
+.grey   .val { color:#94a3b8; }
+
+/* ── Quick access section ── */
+.quick-access {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:10px; padding:16px 18px; margin-bottom:20px;
+}
+.qa-label {
+  font-size:10px; text-transform:uppercase; letter-spacing:.6px;
+  color:var(--muted); margin-bottom:12px;
+}
+.qa-row { display:flex; gap:8px; flex-wrap:wrap; }
+.qa-btn {
+  display:flex; align-items:center; gap:7px;
+  padding:9px 16px; background:var(--card2);
+  border:1px solid var(--border); border-radius:8px;
+  color:var(--text2); font-size:12px; cursor:pointer;
+  transition:all .15s; text-decoration:none;
+}
+.qa-btn:hover { border-color:var(--accent); color:var(--text); background:rgba(59,130,246,.06); }
+.qa-btn .qa-icon { font-size:15px; }
+.qa-btn .qa-text { display:flex; flex-direction:column; gap:1px; }
+.qa-btn .qa-title { font-weight:500; font-size:12px; }
+.qa-btn .qa-sub   { font-size:10px; color:var(--muted); }
+
+/* ── Output preview ── */
+.preview-item {
+  display:flex; align-items:flex-start; gap:8px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:9px 12px; font-size:11px;
+}
+.preview-item .pi-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
+.preview-item .pi-body { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.preview-item .pi-label { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.4px; }
+.preview-item .pi-path  { color:var(--text2); word-break:break-all; line-height:1.4; }
+.preview-item.pi-valid  { border-color:rgba(16,185,129,.25); }
+.preview-item.pi-dup    { border-color:rgba(245,158,11,.2); }
+.preview-item.pi-csv    { border-color:rgba(59,130,246,.25); }
+
+/* ── Log ── */
+.log-wrap { margin-bottom:0; }
+.log-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:6px;
+}
+.log-title { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
+.log-clear {
+  font-size:10px; color:var(--muted); background:none; border:none;
+  cursor:pointer; padding:2px 6px; border-radius:4px;
+}
+.log-clear:hover { color:var(--text); background:var(--muted2); }
+.log {
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:10px; height:110px; overflow-y:auto;
+  padding:10px 13px; font-family:'Cascadia Code','Consolas',monospace;
+  font-size:11px; color:var(--muted);
+}
+.log div { margin-bottom:1px; }
+.log .err  { color:#f87171; }
+.log .done { color:var(--green); }
+.log .info { color:#60a5fa; }
+.log .warn { color:#fbbf24; }
+
+/* ── Overlays ── */
+.overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.72); z-index:200;
+  align-items:center; justify-content:center;
+  backdrop-filter:blur(5px);
+}
+.overlay.open { display:flex; }
+.panel {
+  background:var(--panel-bg); border:1px solid var(--border);
+  border-radius:14px; padding:26px 28px;
+  width:min(500px,93vw); max-height:84vh; overflow-y:auto;
+  box-shadow:0 20px 50px var(--shadow);
+}
+.panel h3 { font-size:15px; font-weight:600; margin-bottom:4px; }
+.panel-sub { font-size:11px; color:var(--muted); margin-bottom:18px; }
+
+/* Settings section headers */
+.s-section-header {
+  font-size:10px; text-transform:uppercase; letter-spacing:.7px;
+  color:var(--muted); padding:14px 0 6px;
+  border-top:1px solid var(--border); margin-top:4px;
+}
+.s-section-header:first-of-type { border-top:none; padding-top:0; }
+
+.s-row {
+  display:flex; justify-content:space-between; align-items:flex-start;
+  padding:11px 0; border-bottom:1px solid var(--border); gap:14px;
+}
+.s-row:last-of-type { border-bottom:none; }
+.s-row.col { flex-direction:column; align-items:stretch; }
+.s-label { font-size:13px; font-weight:500; margin-bottom:2px; }
+.s-desc  { font-size:11px; color:var(--muted); line-height:1.5; }
+.s-path  { display:flex; gap:7px; margin-top:8px; }
+.s-path input {
+  flex:1; background:var(--card2); border:1px solid var(--border);
+  border-radius:7px; color:var(--text); padding:7px 10px;
+  font-size:12px; outline:none;
+}
+.s-path input:focus { border-color:var(--accent); }
+.s-path-btn {
+  padding:7px 13px; background:var(--muted2); border:none;
+  border-radius:7px; color:var(--text); cursor:pointer; font-size:12px;
+  transition:background .15s;
+}
+.s-path-btn:hover { background:var(--accent); color:white; }
+.s-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+.s-cancel {
+  padding:8px 18px; background:var(--muted2); border:none;
+  border-radius:7px; color:var(--text); cursor:pointer;
+  font-size:12px; font-weight:500; transition:background .15s;
+}
+.s-cancel:hover { background:var(--border2); }
+.s-save {
+  padding:8px 18px; background:var(--accent); border:none;
+  border-radius:7px; color:white; cursor:pointer;
+  font-size:12px; font-weight:500; transition:background .15s;
+}
+.s-save:hover { background:var(--accent2); }
+
+/* Settings footer */
+.s-footer {
+  margin-top:18px; padding-top:14px;
+  border-top:1px solid var(--border);
+  display:flex; gap:7px; flex-wrap:wrap; align-items:center;
+}
+.s-footer-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 12px; border-radius:7px; font-size:11px;
+  font-weight:500; cursor:pointer; text-decoration:none;
+  border:1px solid var(--border); background:var(--card2);
+  color:var(--muted); transition:all .15s;
+}
+.s-footer-btn:hover { border-color:var(--accent); color:var(--text); }
+.s-footer-btn.version { color:var(--accent); border-color:rgba(59,130,246,.3); background:rgba(59,130,246,.06); }
+.s-footer-btn.donate  { color:#f59e0b; border-color:rgba(245,158,11,.3); background:rgba(245,158,11,.06); }
+
+/* Switch */
+.sw { position:relative; width:38px; height:21px; flex-shrink:0; }
+.sw input { opacity:0; width:0; height:0; }
+.track {
+  position:absolute; inset:0; background:var(--muted2);
+  border-radius:21px; cursor:pointer; transition:.2s;
+}
+.track:before {
+  content:""; position:absolute;
+  width:15px; height:15px; left:3px; top:3px;
+  background:white; border-radius:50%; transition:.2s;
+}
+.sw input:checked + .track { background:var(--accent); }
+.sw input:checked + .track:before { transform:translateX(17px); }
+
+/* History panel */
+.h-panel { width:min(600px,94vw); }
+.h-list  { max-height:400px; overflow-y:auto; }
+.h-entry {
+  border:1px solid var(--border); border-radius:9px;
+  padding:13px; margin-bottom:9px; background:var(--card2);
+  transition:border-color .15s;
+}
+.h-entry:hover { border-color:var(--border2); }
+.h-entry-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.h-time  { font-size:12px; font-weight:600; }
+.h-badge { font-size:10px; color:var(--green); background:rgba(16,185,129,.1); padding:2px 8px; border-radius:20px; }
+.h-src   { font-size:11px; color:var(--muted); margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.h-stats { display:flex; gap:10px; flex-wrap:wrap; font-size:11px; margin-bottom:9px; }
+.h-stat  { color:var(--muted); }
+.h-stat b { color:var(--text); }
+.h-links { display:flex; gap:6px; flex-wrap:wrap; }
+.h-link  {
+  font-size:10px; padding:4px 10px; background:var(--muted2);
+  border:none; border-radius:5px; color:var(--text); cursor:pointer;
+  transition:all .12s;
+}
+.h-link:hover { background:var(--accent); color:white; }
+.h-empty { color:var(--muted); text-align:center; padding:32px; }
+.h-close {
+  width:100%; margin-top:14px; padding:10px;
+  background:var(--muted2); border:none; border-radius:8px;
+  color:var(--text); cursor:pointer; font-weight:500;
+  transition:background .15s;
+}
+.h-close:hover { background:var(--border2); }
+</style>
+</head>
+<body>
+
+<!-- Drop overlay -->
+<div id="drop-hint">
+  <div style="font-size:40px">🖼️</div>
+  <div style="font-weight:600">Drop image files here</div>
+  <div style="font-size:12px;opacity:.7">Source folder will be set from dropped files</div>
+</div>
+
+<!-- History overlay -->
+<div class="overlay" id="history-overlay">
+  <div class="panel h-panel">
+    <h3>📋 Run History</h3>
+    <p class="panel-sub">Recent processing sessions</p>
+    <div class="h-list" id="history-list"><div class="h-empty">No runs yet.</div></div>
+    <button class="h-close" onclick="closeHistory()">Close</button>
+  </div>
+</div>
+
+<!-- Settings overlay -->
+<div class="overlay" id="settings-overlay">
+  <div class="panel">
+    <h3>⚙️ Settings</h3>
+    <p class="panel-sub">Configure output, duplicates, and exports</p>
+
+    <!-- Output -->
+    <div class="s-section-header">Output</div>
+
+    <div class="s-row col">
+      <div class="s-label">Universal output folder</div>
+      <div class="s-desc">Used when "Save next to source" is OFF</div>
+      <div class="s-path">
+        <input id="cfg-global-path" placeholder="C:\genmeta" />
+        <button class="s-path-btn" onclick="browsePath('cfg-global-path')">Browse</button>
+      </div>
+    </div>
+
+    <div class="s-row">
+      <div><div class="s-label">Save next to source folder</div><div class="s-desc">Creates valid/, duplicates/ etc. inside selected folder</div></div>
+      <label class="sw"><input type="checkbox" id="cfg-local-output"><span class="track"></span></label>
+    </div>
+
+    <!-- Duplicates -->
+    <div class="s-section-header">Duplicates</div>
+
+    <div class="s-row col">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div class="s-label">Universal duplicate folder</div><div class="s-desc">All duplicates from every scan go here</div></div>
+        <label class="sw"><input type="checkbox" id="cfg-univ-dup-enabled" onchange="toggleUnivDup()"><span class="track"></span></label>
+      </div>
+      <div id="univ-dup-path-row" style="display:none;margin-top:10px;">
+        <div class="s-path">
+          <input id="cfg-univ-dup-path" placeholder="C:\all_duplicates" />
+          <button class="s-path-btn" onclick="browsePath('cfg-univ-dup-path')">Browse</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Universal CSV -->
+    <div class="s-section-header">Universal CSV</div>
+
+    <div class="s-row col">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div class="s-label">Custom CSV destination</div><div class="s-desc">Override where CSV files are saved; default is Universal CSV subfolder</div></div>
+        <label class="sw"><input type="checkbox" id="cfg-univ-csv-enabled" onchange="toggleUnivCsv()"><span class="track"></span></label>
+      </div>
+      <div id="univ-csv-path-row" style="display:none;margin-top:10px;">
+        <div class="s-path">
+          <input id="cfg-univ-csv-path" placeholder="C:\all_csv" />
+          <button class="s-path-btn" onclick="browsePath('cfg-univ-csv-path')">Browse</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-row">
+      <div><div class="s-label">Check duplicates across all file types</div><div class="s-desc">Videos and wrong-format files also deduplicated</div></div>
+      <label class="sw"><input type="checkbox" id="cfg-dedup-all"><span class="track"></span></label>
+    </div>
+
+    <!-- Export -->
+    <div class="s-section-header">Export</div>
+
+    <div class="s-row">
+      <div><div class="s-label">Export Adobe Stock CSV</div><div class="s-desc">Generate adobe_*.csv after each run</div></div>
+      <label class="sw"><input type="checkbox" id="cfg-export-adobe"><span class="track"></span></label>
+    </div>
+
+    <div class="s-row">
+      <div><div class="s-label">Export Shutterstock CSV</div><div class="s-desc">Generate shutter_*.csv after each run</div></div>
+      <label class="sw"><input type="checkbox" id="cfg-export-shutter"><span class="track"></span></label>
+    </div>
+
+    <!-- Appearance -->
+    <div class="s-section-header">Appearance</div>
+
+    <div class="s-row">
+      <div><div class="s-label">Dark mode</div><div class="s-desc">Toggle between dark and light theme</div></div>
+      <label class="sw"><input type="checkbox" id="cfg-dark-mode" onchange="applyThemeFromSettings()"><span class="track"></span></label>
+    </div>
+
+    <div class="s-actions">
+      <button class="s-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="s-save"   onclick="saveSettings()">Save</button>
+    </div>
+
+    <!-- Footer -->
+    <div class="s-footer">
+      <span class="s-footer-btn version" id="version-btn" onclick="checkVersion()" title="Click to check for updates" style="cursor:pointer">v20.1</span>
+      <a class="s-footer-btn" href="#"
+         onclick="openExternal('https://github.com/meetpalan-dev');return false;">
+        👨‍💻 Meet Palan
+      </a>
+      <a class="s-footer-btn" href="#"
+         onclick="openExternal('https://github.com/meetpalan-dev/genmeta');return false;">
+        ⭐ GitHub
+      </a>
+      <a class="s-footer-btn donate" href="#" onclick="return false;">
+        ☕ Donate
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main page ── -->
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <div>
+        <h1>GenMeta</h1>
+        <p>Stock photo metadata generator</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+      <button class="hbtn" onclick="openHistory()">📋 History</button>
+      <button class="hbtn" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <!-- Folder input -->
+  <div class="folder-wrap" id="folder-wrap">
+    <span class="fi-icon">📁</span>
+    <input class="fi-input" id="folder" placeholder="Click Browse or drop a folder here…" readonly />
+    <span class="fi-hint" id="fi-hint">drop or browse</span>
+    <button class="fi-btn" id="browse-btn" onclick="pickFolder()">Browse folder</button>
+  </div>
+
+  <!-- Locked warning -->
+  <div id="locked-banner">
+    ⚠ <b id="locked-count">0</b> file(s) copied but not deleted — Windows has them locked.
+    Press <b>Alt+P</b> to close Explorer Preview pane, then run again.
+  </div>
+
+  <!-- Output preview — shown when a folder is selected -->
+  <div id="output-preview" style="display:none;margin-bottom:14px;">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:7px;">Output preview</div>
+    <div id="preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;"></div>
+  </div>
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <button class="btn btn-primary" id="btn-start" onclick="startRun()" disabled>▶ Start</button>
+    <button class="btn btn-stop"    id="btn-stop"  onclick="stopRun()" style="display:none">■ Stop</button>
+    <button class="btn btn-secondary" id="btn-open" onclick="openOutputFolder()" style="display:none">📂 Output</button>
+    <button class="btn btn-undo"    id="btn-undo"  onclick="undoRun()" style="display:none">↩ Undo</button>
+  </div>
+
+  <!-- Filter pills -->
+  <div class="pills-label">Move options</div>
+  <div class="pills">
+    <div class="pill active" id="tog-dupes"     onclick="togglePill(this)"><span class="pdot"></span>Duplicates</div>
+    <div class="pill active" id="tog-videos"    onclick="togglePill(this)"><span class="pdot"></span>Videos</div>
+    <div class="pill"        id="tog-small"     onclick="togglePill(this)"><span class="pdot"></span>Too-small</div>
+    <div class="pill"        id="tog-oversized" onclick="togglePill(this)"><span class="pdot"></span>Oversized</div>
+    <div class="pill"        id="tog-other"     onclick="togglePill(this)"><span class="pdot"></span>Other formats</div>
+  </div>
+
+  <!-- Mode badge -->
+  <div class="mode-badge"><span class="mbdot"></span><span id="mode-text">Loading…</span></div>
+
+  <!-- Progress -->
+  <div class="prog-section">
+    <div class="prog-top">
+      <span id="stage-label"></span>
+      <span id="stage-fraction"></span>
+    </div>
+    <div class="prog-bg"><div id="prog-bar" class="pulse"></div></div>
+    <div class="prog-bot">
+      <span id="status-label">Loading AI model…</span>
+      <span id="prog-fraction"></span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat green" ><div class="lbl">✔ Valid moved</div>   <div class="val" id="s-valid">—</div></div>
+    <div class="stat orange"><div class="lbl">⚠ Duplicates</div>    <div class="val" id="s-dupes">—</div></div>
+    <div class="stat grey"  ><div class="lbl">↕ Too small</div>     <div class="val" id="s-small">—</div></div>
+    <div class="stat grey"  ><div class="lbl">⬆ Oversized</div>     <div class="val" id="s-oversized">—</div></div>
+    <div class="stat blue"  ><div class="lbl">🎬 Videos</div>       <div class="val" id="s-videos">—</div></div>
+    <div class="stat grey"  ><div class="lbl">⊘ Wrong format</div>  <div class="val" id="s-skipped">—</div></div>
+    <div class="stat red"   ><div class="lbl">✖ Errors</div>        <div class="val" id="s-errors">—</div></div>
+    <div class="stat yellow"><div class="lbl">🔒 Locked</div>       <div class="val" id="s-locked">—</div></div>
+  </div>
+
+  <!-- Quick access — shown after first successful run -->
+  <div class="quick-access" id="quick-access" style="display:none">
+    <div class="qa-label">Or access existing data</div>
+    <div class="qa-row">
+      <button class="qa-btn" onclick="openOutputFolder()">
+        <span class="qa-icon">📁</span>
+        <span class="qa-text">
+          <span class="qa-title">Review Metadata</span>
+          <span class="qa-sub">Open output folder</span>
+        </span>
+      </button>
+      <button class="qa-btn" id="qa-csv-adobe" onclick="openLastCsv('adobe')" style="display:none">
+        <span class="qa-icon">📊</span>
+        <span class="qa-text">
+          <span class="qa-title">Adobe CSV</span>
+          <span class="qa-sub">Open in Explorer</span>
+        </span>
+      </button>
+      <button class="qa-btn" id="qa-csv-shutter" onclick="openLastCsv('shutter')" style="display:none">
+        <span class="qa-icon">📊</span>
+        <span class="qa-text">
+          <span class="qa-title">Shutterstock CSV</span>
+          <span class="qa-sub">Open in Explorer</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-wrap">
+    <div class="log-header">
+      <span class="log-title">Activity log</span>
+      <button class="log-clear" onclick="document.getElementById('log').innerHTML=''">Clear</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+let es = null, timer = null, undoTimer = null;
+let useLocalOutput = true;
+let dragCounter = 0;
+let _lastRunHistory = null;   // stores last run for quick-access CSV buttons
+
+// ── Theme ─────────────────────────────────────────────────
+function applyTheme(dark) {
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  document.getElementById("theme-toggle-btn").textContent = dark ? "🌙" : "☀️";
+  localStorage.setItem("genmeta_theme", dark ? "dark" : "light");
+}
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  applyTheme(!isDark);
+  // sync settings checkbox if open
+  const cb = document.getElementById("cfg-dark-mode");
+  if (cb) cb.checked = !isDark;
+}
+function applyThemeFromSettings() {
+  const dark = document.getElementById("cfg-dark-mode").checked;
+  applyTheme(dark);
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function togglePill(el) { el.classList.toggle("active"); }
+function togVal(id) { return document.getElementById(id).classList.contains("active"); }
+
+function appendLog(text, cls) {
+  const box = document.getElementById("log");
+  const div = document.createElement("div");
+  if (cls) div.className = cls;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function setStatus(msg) { document.getElementById("status-label").textContent = msg; }
+function updateModeBadge() {
+  document.getElementById("mode-text").textContent = useLocalOutput
+    ? "Output: subfolders next to source"
+    : "Output: universal folder";
+}
+
+// ── ETA tracking ─────────────────────────────────────────
+let _etaStart = null;   // timestamp when phase 2 began
+let _etaBase  = 0;      // progress["current"] at phase 2 start
+
+function calcEta(current, total) {
+  if (!_etaStart || current <= _etaBase) return "";
+  const elapsed = (Date.now() - _etaStart) / 1000;           // seconds
+  const done    = current - _etaBase;
+  const left    = total   - current;
+  if (done <= 0 || left <= 0) return "";
+  const secLeft = Math.round((elapsed / done) * left);
+  if (secLeft < 60)  return `~${secLeft}s left`;
+  if (secLeft < 3600) return `~${Math.ceil(secLeft/60)}m left`;
+  return `~${(secLeft/3600).toFixed(1)}h left`;
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function setStats(p) {
+  const S = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v ?? "—"; };
+  S("s-valid",p.valid); S("s-dupes",p.dupes); S("s-small",p.small);
+  S("s-oversized",p.oversized); S("s-videos",p.videos);
+  S("s-skipped",p.skipped); S("s-errors",p.errors); S("s-locked",p.locked||0);
+
+  const banner = document.getElementById("locked-banner");
+  if ((p.locked||0) > 0) {
+    document.getElementById("locked-count").textContent = p.locked;
+    banner.style.display = "block";
+  } else { banner.style.display = "none"; }
+
+  const bar   = document.getElementById("prog-bar");
+  const stage = p.stage || "idle";
+  const stEl  = document.getElementById("stage-label");
+  const sfEl  = document.getElementById("stage-fraction");
+
+  if (stage === "filtering" && (p.filter_total||0) > 0) {
+    _etaStart = null;   // reset ETA — not in AI phase yet
+    bar.classList.remove("pulse");
+    bar.style.background = "var(--orange)";
+    bar.style.width = Math.round((p.filter_current / p.filter_total) * 100) + "%";
+    stEl.textContent = "Phase 1 — Filtering";
+    sfEl.textContent = `${p.filter_current} / ${p.filter_total}`;
+    document.getElementById("prog-fraction").textContent = "";
+
+  } else if (stage === "processing" && (p.total||0) > 0) {
+    // Start ETA clock on first tick of phase 2
+    if (!_etaStart) {
+      _etaStart = Date.now();
+      _etaBase  = p.current;
+    }
+    bar.classList.remove("pulse");
+    bar.style.background = "var(--accent)";
+    bar.style.width = Math.round((p.current / p.total) * 100) + "%";
+    stEl.textContent = "Phase 2 — AI captioning";
+    sfEl.textContent = calcEta(p.current, p.total);   // ← ETA instead of "x valid"
+    document.getElementById("prog-fraction").textContent = `${p.current} / ${p.total}`;
+
+  } else if (stage === "done" || (!p.running && (p.total||0) > 0)) {
+    _etaStart = null;
+    bar.classList.remove("pulse");
+    bar.style.background = "var(--green)";
+    bar.style.width = "100%";
+    stEl.textContent = ""; sfEl.textContent = "";
+    document.getElementById("prog-fraction").textContent = `${p.current} / ${p.total}`;
+  }
+
+  if (p.undo_available) document.getElementById("btn-undo").style.display = "flex";
+}
+
+// ── Polling ───────────────────────────────────────────────
+function startPolling() {
+  timer = setInterval(async () => {
+    try {
+      const p = await (await fetch("/progress")).json();
+      setStats(p);
+      if (!p.running) stopPolling();
+    } catch {}
+  }, 700);
+}
+function stopPolling() { clearInterval(timer); timer = null; }
+
+// ── Model wait ────────────────────────────────────────────
+async function waitModel() {
+  while (true) {
+    try {
+      const d = await (await fetch("/model_progress")).json();
+      if (d.status === "error") {
+        setStatus("❌ Model failed to load");
+        const bar = document.getElementById("prog-bar");
+        bar.classList.remove("pulse"); bar.style.background="var(--red)"; bar.style.width="100%";
+        break;
+      }
+      if (d.ready) {
+        const bar = document.getElementById("prog-bar");
+        bar.classList.remove("pulse"); bar.style.width="0%";
+        setStatus("Ready — select a folder and press Start");
+        document.getElementById("btn-start").disabled = false;
+        appendLog("AI model loaded and ready.", "info");
+        break;
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 800));
+  }
+}
+
+// ── Native drop callback ──────────────────────────────────
+function setDroppedFolder(path) {
+  if (!path) return;
+  document.getElementById("folder").value = path;
+  document.getElementById("fi-hint").textContent = "✓ folder set";
+  appendLog("📂 Folder set via drag-drop: " + path, "info");
+  dragCounter = 0;
+  document.getElementById("drop-hint").classList.remove("visible");
+  showFolderPreview(path);
+}
+
+// ── Folder picker ─────────────────────────────────────────
+async function pickFolder() {
+  for (let i = 0; i < 30; i++) {
+    if (window.pywebview && window.pywebview.api) break;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  try {
+    const path = await window.pywebview.api.browse_folder();
+    if (path) {
+      document.getElementById("folder").value = path;
+      document.getElementById("fi-hint").textContent = "✓ folder set";
+      showFolderPreview(path);
+    }
+  } catch {
+    const inp = document.getElementById("folder");
+    inp.removeAttribute("readonly");
+    inp.classList.add("editable");
+    inp.placeholder = "Paste folder path here…";
+    inp.focus(); inp.select();
+  }
+}
+
+// ── Drag-drop handlers ────────────────────────────────────
+document.addEventListener("dragenter", e => {
+  e.preventDefault();
+  dragCounter++;
+  if (dragCounter === 1) document.getElementById("drop-hint").classList.add("visible");
+});
+document.addEventListener("dragleave", e => {
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    document.getElementById("drop-hint").classList.remove("visible");
+  }
+});
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => {
+  e.preventDefault();
+  dragCounter = 0;
+  document.getElementById("drop-hint").classList.remove("visible");
+  document.getElementById("folder-wrap").classList.remove("drag-over");
+
+  // JS fallback — primary handler is native_drop.py
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0 && files[0].path) {
+    let path = files[0].path;
+    if (path.match(/^[A-Za-z]:\\/) || path.startsWith("\\\\")) {
+      const sep = path.includes("\\") ? "\\" : "/";
+      const parts = path.split(sep);
+      if (parts[parts.length - 1].includes(".")) parts.pop();
+      path = parts.join(sep);
+      setDroppedFolder(path);
+    }
+  }
+});
+const fw = document.getElementById("folder-wrap");
+fw.addEventListener("dragover",  () => fw.classList.add("drag-over"));
+fw.addEventListener("dragleave", () => fw.classList.remove("drag-over"));
+
+// ── Quick access CSV helpers ──────────────────────────────
+async function openLastCsv(type) {
+  try {
+    const runs = await (await fetch("/history")).json();
+    if (!runs.length) return;
+    const r = runs[0];
+    const path = type === "adobe" ? r.csv_adobe : r.csv_shutter;
+    if (path) openPath(path);
+  } catch {}
+}
+
+function showQuickAccess(run) {
+  const qa = document.getElementById("quick-access");
+  qa.style.display = "block";
+  if (run && run.csv_adobe)   document.getElementById("qa-csv-adobe").style.display   = "flex";
+  if (run && run.csv_shutter) document.getElementById("qa-csv-shutter").style.display = "flex";
+}
+
+// ── Start ─────────────────────────────────────────────────
+async function startRun() {
+  const folder = document.getElementById("folder").value.trim();
+  if (!folder) { await pickFolder(); return; }
+
+  document.getElementById("log").innerHTML = "";
+  document.getElementById("btn-start").disabled = true;
+  document.getElementById("btn-stop").style.display = "flex";
+  document.getElementById("btn-open").style.display = "none";
+  document.getElementById("quick-access").style.display = "none";
+  document.getElementById("locked-banner").style.display = "none";
+  document.getElementById("output-preview").style.display = "none";
+  ["s-valid","s-dupes","s-small","s-oversized","s-videos","s-skipped","s-errors","s-locked"]
+    .forEach(id => { document.getElementById(id).textContent = "0"; });
+
+  const bar = document.getElementById("prog-bar");
+  bar.classList.add("pulse"); bar.style.width="100%"; bar.style.background="";
+  setStatus("Running…");
+  document.getElementById("stage-label").textContent = "";
+  document.getElementById("stage-fraction").textContent = "";
+  _etaStart = null;
+  _etaBase  = 0;
+
+  const res = await fetch("/run", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      folder,
+      move_dupes:       togVal("tog-dupes"),
+      move_videos:      togVal("tog-videos"),
+      move_small:       togVal("tog-small"),
+      move_oversized:   togVal("tog-oversized"),
+      move_other:       togVal("tog-other"),
+      use_local_output: useLocalOutput,
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    appendLog("ERROR: " + (data.error||"Unknown"), "err");
+    bar.classList.remove("pulse");
+    document.getElementById("btn-start").disabled = false;
+    document.getElementById("btn-stop").style.display = "none";
+    setStatus("Error — see log.");
+    return;
+  }
+
+  startPolling();
+  if (es) es.close();
+  es = new EventSource("/status");
+  es.onmessage = e => {
+    const line = e.data;
+    if (line.startsWith("WARNING:"))                               appendLog(line, "warn");
+    else if (line.startsWith("Error") || line.startsWith("FATAL")) appendLog(line, "err");
+    else if (line.startsWith("PROCESS_END") || line.startsWith("STOPPED")) {
+      appendLog(line, "done");
+      finishRun(line.startsWith("PROCESS_END"));
+      es.close();
+    }
+  };
+  es.onerror = () => { es.close(); finishRun(false); };
+}
+
+async function stopRun() {
+  document.getElementById("btn-stop").disabled = true;
+  setStatus("Stopping…");
+  await fetch("/stop", {method:"POST"});
+}
+
+async function finishRun(success) {
+  stopPolling();
+  fetch("/progress").then(r=>r.json()).then(setStats).catch(()=>{});
+  const bar = document.getElementById("prog-bar");
+  bar.classList.remove("pulse");
+  if (success) bar.style.width = "100%";
+  setStatus(success ? "Done ✓" : "Stopped.");
+  document.getElementById("btn-start").disabled = false;
+  const sb = document.getElementById("btn-stop");
+  sb.style.display = "none"; sb.disabled = false;
+  if (success) {
+    document.getElementById("btn-open").style.display = "flex";
+    openOutputFolder();
+    // Load last run for quick-access buttons
+    try {
+      const runs = await (await fetch("/history")).json();
+      if (runs.length) showQuickAccess(runs[0]);
+    } catch {}
+  }
+}
+
+async function openOutputFolder() {
+  try { await fetch("/open_folder", {method:"POST"}); } catch {}
+}
+
+// ── Undo ─────────────────────────────────────────────────
+function undoRun() {
+  const btn = document.getElementById("btn-undo");
+  if (!btn.classList.contains("confirm")) {
+    btn.classList.add("confirm"); btn.textContent = "↩ Confirm?";
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => {
+      btn.classList.remove("confirm"); btn.textContent = "↩ Undo";
+    }, 5000);
+    return;
+  }
+  clearTimeout(undoTimer);
+  btn.classList.remove("confirm"); btn.textContent = "↩ Undo";
+  btn.disabled = true; setStatus("Undoing…");
+
+  fetch("/undo", {method:"POST"}).then(r=>r.json()).then(data => {
+    if (data.error) {
+      appendLog("Undo error: " + data.error, "err"); setStatus("Undo failed.");
+    } else {
+      appendLog(
+        `Undo complete: ${data.restored} file(s) restored` +
+        (data.files_deleted ? `, ${data.files_deleted} CSV(s) deleted` : "") +
+        (data.dirs_removed  ? `, ${data.dirs_removed} folder(s) removed.` : "."),
+        data.failed > 0 ? "warn" : "done"
+      );
+      if (data.errors) data.errors.forEach(e => appendLog("  " + e, "err"));
+      setStatus("Undo complete ✓");
+      btn.style.display = "none";
+      document.getElementById("quick-access").style.display = "none";
+    }
+    btn.disabled = false;
+  }).catch(() => { appendLog("Undo failed.", "err"); btn.disabled = false; });
+}
+
+// ── History ───────────────────────────────────────────────
+async function openHistory() {
+  const list = document.getElementById("history-list");
+  list.innerHTML = '<div class="h-empty">Loading…</div>';
+  document.getElementById("history-overlay").classList.add("open");
+  try {
+    const runs = await (await fetch("/history")).json();
+    if (!runs.length) { list.innerHTML = '<div class="h-empty">No runs recorded yet.</div>'; return; }
+    list.innerHTML = runs.map((r,i) => {
+      const st  = r.stats || {};
+      const esc = p => (p||"").replace(/\\/g,"\\\\");
+      const badge = i === 0 ? `<span class="h-badge">Latest</span>` : "";
+      return `<div class="h-entry">
+        <div class="h-entry-head">
+          <span class="h-time">${r.timestamp}</span>${badge}
+        </div>
+        <div class="h-src" title="${r.source}">📂 ${r.source}</div>
+        <div class="h-stats">
+          <span class="h-stat">✔ Valid <b>${st.valid||0}</b></span>
+          <span class="h-stat">⚠ Dupes <b>${st.dupes||0}</b></span>
+          <span class="h-stat">↕ Small <b>${st.small||0}</b></span>
+          <span class="h-stat">🎬 Videos <b>${st.videos||0}</b></span>
+          <span class="h-stat">✖ Errors <b>${st.errors||0}</b></span>
+        </div>
+        <div class="h-links">
+          ${r.valid_dir   ? `<button class="h-link" onclick="openPath('${esc(r.valid_dir)}')">📁 Valid</button>` : ""}
+          ${r.dup_dir     ? `<button class="h-link" onclick="openPath('${esc(r.dup_dir)}')">🗑 Dupes</button>` : ""}
+          ${r.csv_adobe   ? `<button class="h-link" onclick="openPath('${esc(r.csv_adobe)}')">📊 Adobe CSV</button>` : ""}
+          ${r.csv_shutter ? `<button class="h-link" onclick="openPath('${esc(r.csv_shutter)}')">📊 Shutter CSV</button>` : ""}
+          ${r.output      ? `<button class="h-link" onclick="openPath('${esc(r.output)}')">📂 Output</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  } catch { list.innerHTML = '<div class="h-empty">Failed to load history.</div>'; }
+}
+function closeHistory() { document.getElementById("history-overlay").classList.remove("open"); }
+async function openPath(path) {
+  await fetch("/open_path", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({path})});
+}
+async function openExternal(url) {
+  // pywebview doesn't open target=_blank; route through Flask or use JS
+  try { await fetch("/open_path", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({path:url})}); }
+  catch {}
+}
+
+// ── Settings ─────────────────────────────────────────────
+async function openSettings() {
+  try {
+    const s = await (await fetch("/get_settings")).json();
+    document.getElementById("cfg-global-path").value        = s.global_storage_path || "";
+    document.getElementById("cfg-local-output").checked     = s.use_local_output !== false;
+    document.getElementById("cfg-univ-dup-enabled").checked = s.univ_dup_enabled || false;
+    document.getElementById("cfg-univ-dup-path").value      = s.univ_dup_path || "";
+    document.getElementById("cfg-univ-csv-enabled").checked = s.univ_csv_enabled || false;
+    document.getElementById("cfg-univ-csv-path").value      = s.univ_csv_path || "";
+    document.getElementById("cfg-dedup-all").checked        = s.dedup_all_files !== false;
+    document.getElementById("cfg-export-adobe").checked     = s.export_adobe !== false;
+    document.getElementById("cfg-export-shutter").checked   = s.export_shutter !== false;
+    document.getElementById("cfg-dark-mode").checked        =
+      document.documentElement.getAttribute("data-theme") === "dark";
+    toggleUnivDup();
+    toggleUnivCsv();
+  } catch {}
+  document.getElementById("settings-overlay").classList.add("open");
+}
+function closeSettings() { document.getElementById("settings-overlay").classList.remove("open"); }
+function toggleUnivDup() {
+  const on = document.getElementById("cfg-univ-dup-enabled").checked;
+  document.getElementById("univ-dup-path-row").style.display = on ? "block" : "none";
+}
+function toggleUnivCsv() {
+  const on = document.getElementById("cfg-univ-csv-enabled").checked;
+  document.getElementById("univ-csv-path-row").style.display = on ? "block" : "none";
+}
+async function saveSettings() {
+  const payload = {
+    global_storage_path: document.getElementById("cfg-global-path").value.trim(),
+    use_local_output:    document.getElementById("cfg-local-output").checked,
+    univ_dup_enabled:    document.getElementById("cfg-univ-dup-enabled").checked,
+    univ_dup_path:       document.getElementById("cfg-univ-dup-path").value.trim(),
+    univ_csv_enabled:    document.getElementById("cfg-univ-csv-enabled").checked,
+    univ_csv_path:       document.getElementById("cfg-univ-csv-path").value.trim(),
+    dedup_all_files:     document.getElementById("cfg-dedup-all").checked,
+    export_adobe:        document.getElementById("cfg-export-adobe").checked,
+    export_shutter:      document.getElementById("cfg-export-shutter").checked,
+  };
+  await fetch("/save_settings", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+  useLocalOutput = payload.use_local_output;
+  updateModeBadge();
+  closeSettings();
+  appendLog("Settings saved.", "info");
+  // Refresh folder preview if a folder is already selected
+  const folder = document.getElementById("folder").value.trim();
+  if (folder) showFolderPreview(folder);
+}
+async function browsePath(inputId) {
+  for (let i = 0; i < 30; i++) {
+    if (window.pywebview && window.pywebview.api) break;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  try {
+    const path = await window.pywebview.api.browse_folder();
+    if (path) document.getElementById(inputId).value = path;
+  } catch {
+    const p = prompt("Paste the full folder path:");
+    if (p) document.getElementById(inputId).value = p.trim();
+  }
+}
+
+// ── Folder output preview ────────────────────────────────
+async function showFolderPreview(folder) {
+  if (!folder) return;
+  try {
+    const d = await (await fetch("/preview_folders", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({folder})
+    })).json();
+    if (d.error) return;
+
+    const ITEMS = [
+      { key:"valid",      icon:"✅", label:"Valid",      cls:"pi-valid" },
+      { key:"duplicates", icon:"⚠️", label:"Duplicates", cls:"pi-dup"   },
+      { key:"videos",     icon:"🎬", label:"Videos",     cls:""         },
+      { key:"small",      icon:"↕",  label:"Too small",  cls:""         },
+      { key:"oversized",  icon:"⬆",  label:"Oversized",  cls:""         },
+      { key:"other",      icon:"⊘",  label:"Other fmt",  cls:""         },
+      { key:"csv",        icon:"📊", label:"CSV files",  cls:"pi-csv"   },
+    ];
+    const grid = document.getElementById("preview-grid");
+    grid.innerHTML = ITEMS.map(it => {
+      const p = d[it.key] || "—";
+      // Shorten path for display: show last 2 path segments
+      const parts = p.replace(/\\/g,"/").split("/").filter(Boolean);
+      const short = parts.length > 2 ? "…\\" + parts.slice(-2).join("\\") : p;
+      return `<div class="preview-item ${it.cls}" title="${p}">
+        <span class="pi-icon">${it.icon}</span>
+        <span class="pi-body">
+          <span class="pi-label">${it.label}</span>
+          <span class="pi-path">${short}</span>
+        </span>
+      </div>`;
+    }).join("");
+    document.getElementById("output-preview").style.display = "block";
+  } catch {}
+}
+
+// ── Init ─────────────────────────────────────────────────
+async function checkVersion() {
+  const btn = document.getElementById("version-btn");
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = "Checking…";
+  try {
+    const d = await (await fetch("/version_check")).json();
+    if (d.update_available) {
+      btn.textContent = `⬆ v${d.remote} available!`;
+      btn.style.color = "var(--green)";
+      btn.style.borderColor = "var(--green)";
+      btn.style.background  = "rgba(16,185,129,.08)";
+      btn.onclick = () => openExternal(d.download_url || "https://github.com/meetpalan-dev/genmeta/releases");
+      appendLog(`Update available: v${d.remote} — ${d.changelog}`, "info");
+    } else {
+      btn.textContent = `✓ v${d.local} up to date`;
+      setTimeout(() => { btn.textContent = orig; }, 3000);
+    }
+  } catch {
+    btn.textContent = orig;
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────
+async function init() {
+  // Restore theme
+  const saved = localStorage.getItem("genmeta_theme") || "dark";
+  applyTheme(saved === "dark");
+
+  try {
+    const s = await (await fetch("/get_settings")).json();
+    useLocalOutput = s.use_local_output !== false;
+  } catch { useLocalOutput = true; }
+  updateModeBadge();
+
+  // Ensure Universal subfolders exist silently
+  try { await fetch("/ensure_folders", {method:"POST"}); } catch {}
+
+  // Show undo if available from a previous session
+  try {
+    const p = await (await fetch("/progress")).json();
+    if (p.undo_available) document.getElementById("btn-undo").style.display = "flex";
+  } catch {}
+
+  // Show quick-access if history exists
+  try {
+    const runs = await (await fetch("/history")).json();
+    if (runs.length) showQuickAccess(runs[0]);
+  } catch {}
+
+  waitModel();
+}
+window.onload = init;
+</script>
+</body>
+</html>
