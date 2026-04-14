@@ -1,0 +1,9 @@
+{
+  "global_storage_path": "C:\\GenMeta\\universal",
+  "use_local_output": false,
+  "univ_dup_path": "C:\\GenMeta\\uni duplicate",
+  "univ_dup_enabled": true,
+  "dedup_all_files": true,
+  "export_adobe": false,
+  "export_shutter": true
+}
