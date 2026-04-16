@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # 🤖 GenMeta
 
 **AI-powered stock photo metadata generator for Shutterstock & Adobe Stock**
