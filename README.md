@@ -21,7 +21,8 @@ GenMeta automatically processes folders of images — filtering duplicates, sizi
 
 ## 📸 Screenshots
 
-> _Add screenshots here once you have them_
+><img width="1920" height="1080" alt="{6DB1AA97-C0E7-4678-AA3F-D92F6528F76A}" src="https://github.com/user-attachments/assets/e55c55c6-522f-4fc4-9c65-8d7f02cdf637" />
+
 
 ---
 
